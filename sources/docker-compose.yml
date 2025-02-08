@@ -1,0 +1,32 @@
+services:
+  local-consul:
+    image: consul:1.15.4
+    volumes:
+      - consul_data1:/consul/data
+    ports:
+      - "8500:8500"
+    restart: no
+  remote-consul:
+    image: consul:1.15.4
+    volumes:
+      - consul_data2:/consul/data
+    environment:
+      CONSUL_LOCAL_CONFIG: |
+        {
+          "acl": {
+            "enabled": true,
+            "default_policy": "deny",
+            "enable_token_persistence": true,
+            "tokens": {
+              "initial_management": "c177e7c8-b2e7-46c1-bf49-acecb95d88e2"
+            }
+          }
+        }
+    ports:
+      - "8501:8500"
+    restart: no
+volumes:
+  consul_data1:
+    driver: local
+  consul_data2:
+    driver: local

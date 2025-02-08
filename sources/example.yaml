@@ -1,0 +1,13 @@
+local-environment:
+  uri: http://localhost:8500/
+  token: ''
+  alias: default
+selected-environment-index: 0
+known-environments:
+  - uri: http://localhost:8501/
+    token: c177e7c8-b2e7-46c1-bf49-acecb95d88e2
+    alias: remote1
+  - uri: http://localhost:8501/
+    token: c177e7c8-b2e7-46c1-bf49-acecb95d88e2
+    alias: remote2
+working-directory: D:\tools\clem
