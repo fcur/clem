@@ -18,8 +18,11 @@ public abstract record BaseApplicationCommand(ApplicationCommandCode Code, strin
         result = targetCode switch
         {
             ApplicationCommandCode.HelpCode => new HelpEnvironmentCommand(commandArgs),
-            ApplicationCommandCode.ListCode => new ListEnvironmentCommand(commandArgs),
-            ApplicationCommandCode.SwitchCode when commandArgs is { Length: 1 } => new SwitchEnvironmentCommand(commandArgs),
+            ApplicationCommandCode.BackupCode => new BackupLocalEnvironmentCommand(commandArgs),
+            ApplicationCommandCode.ListCode when commandArgs is null => new ListEnvironmentCommand(commandArgs),
+            ApplicationCommandCode.ListCode when commandArgs is { Length: 1 } => new ListEnvironmentVersionsCommand(commandArgs),
+            ApplicationCommandCode.SwitchCode when commandArgs is { Length: 1 } => new SwitchLatestEnvironmentCommand(commandArgs),
+            ApplicationCommandCode.SwitchCode when commandArgs is { Length: 2 } => new SwitchEnvironmentVersionCommand(commandArgs),
             ApplicationCommandCode.CloneCode when commandArgs is { Length: 1 } => new CloneRemoteEnvironmentCommand(commandArgs),
             ApplicationCommandCode.AddCode when commandArgs is { Length: 3 } => new AddRemoteEnvironmentCommand(commandArgs),
             _ => new UnknownEnvironmentCommand(new ApplicationCommandCode(targetCode), commandArgs)

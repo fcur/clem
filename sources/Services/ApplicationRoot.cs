@@ -22,36 +22,33 @@ public sealed class ApplicationRoot : IApplicationRoot
 
     public Task Start(string[]? args, CancellationToken token = default)
     {
-        if (args is null || args.Length == 0)
-        {
-            return Task.CompletedTask;
-        }
-
         if (string.IsNullOrEmpty(_configuration.WorkingDirectory))
         {
             return RequestWorkingDirectoryLocation();
         }
-
-        if (!BaseApplicationCommand.TryCreateCommand(args, out var command))
+        
+        if (args is null || args.Length == 0|| !BaseApplicationCommand.TryCreateCommand(args, out var command))
         {
             return PrintHelpInformation(token);
         }
 
         return command switch
         {
-            // TODO: add backup for local data before overriding by remote data
             HelpEnvironmentCommand helpCommand => HandleCommand(helpCommand, token),
-            SwitchEnvironmentCommand switchEnvironment => HandleCommand(switchEnvironment, token),
+            SwitchLatestEnvironmentCommand switchLatestCommand => HandleCommand(switchLatestCommand, token),
+            SwitchEnvironmentVersionCommand switchVersionEnvironment => HandleCommand(switchVersionEnvironment, token),
             ListEnvironmentCommand listCommand => HandleCommand(listCommand, token),
+            ListEnvironmentVersionsCommand listVersionsCommand  => HandleCommand(listVersionsCommand, token),
             CloneRemoteEnvironmentCommand cloneCommand => HandleCommand(cloneCommand, token),
             AddRemoteEnvironmentCommand addCommand => HandleCommand(addCommand, token),
+            BackupLocalEnvironmentCommand backupLocalCommand=> HandleCommand(backupLocalCommand, token),
             _ => Task.CompletedTask
         };
     }
 
     private Task RequestWorkingDirectoryLocation()
     {
-        var unknownLocation = true;
+        var locationIsUnset = true;
 
         do
         {
@@ -68,8 +65,8 @@ public sealed class ApplicationRoot : IApplicationRoot
 
             AppConfigurationManager.UpdateConfiguration(_configuration, _serializer.Serialize);
 
-            unknownLocation = false;
-        } while (unknownLocation);
+            locationIsUnset = false;
+        } while (locationIsUnset);
 
         return Task.CompletedTask;
     }
@@ -79,16 +76,56 @@ public sealed class ApplicationRoot : IApplicationRoot
         return PrintHelpInformation(token);
     }
 
-    private Task HandleCommand(SwitchEnvironmentCommand command, CancellationToken token)
+    private Task HandleCommand(SwitchLatestEnvironmentCommand command, CancellationToken token)
     {
         // cmd: switch remote1
-        throw new NotImplementedException();
+
+        // ReSharper disable once NullableWarningSuppressionIsUsed
+        var knownVersions = AppConfigurationManager.CheckKnownEnvironmentVersions(_configuration.WorkingDirectory!, command.Alias);
+        var latest = knownVersions.MaxBy(v => v.VersionDate);
+        var version = latest.Version;
+        
+        var versionCommand = new SwitchEnvironmentVersionCommand([command.Alias,version]);
+        return HandleCommand(versionCommand, token);
+    }
+    
+    private async Task HandleCommand(SwitchEnvironmentVersionCommand versionCommand, CancellationToken token)
+    {
+        // cmd: switch remote1 1739055013
+
+        var backupLocalEnvCommand = new BackupLocalEnvironmentCommand(versionCommand.Args);
+        await HandleCommand(backupLocalEnvCommand, token);
+
+        // ReSharper disable once NullableWarningSuppressionIsUsed
+        await ConsulDataManager.Upload(_configuration.LocalEnvironment, _configuration.WorkingDirectory!, versionCommand.Alias, versionCommand.Version, token);
     }
 
     private Task HandleCommand(ListEnvironmentCommand command, CancellationToken token)
     {
         // cmd: list
-        throw new NotImplementedException();
+        // ReSharper disable once NullableWarningSuppressionIsUsed
+        var availableEnvironments = AppConfigurationManager.CheckKnownEnvironments(_configuration.WorkingDirectory!);
+
+        foreach (var info in availableEnvironments)
+        {
+            Console.WriteLine($"'{info.Alias}' contains ({info.Count}) versions");
+        }
+        
+        return Task.CompletedTask;
+    }
+    
+    private Task HandleCommand(ListEnvironmentVersionsCommand command, CancellationToken token)
+    {
+        // cmd: list remote1
+        // ReSharper disable once NullableWarningSuppressionIsUsed
+        var availableVersions = AppConfigurationManager.CheckKnownEnvironmentVersions(_configuration.WorkingDirectory!, command.Alias);
+
+        foreach (var info in availableVersions)
+        {
+            Console.WriteLine($"'{info.Version}' version from '{info.VersionDate:yyyy/MM/dd hh:mm:ss}'");
+        }
+        
+        return Task.CompletedTask;
     }
 
     [SuppressMessage("ReSharper", "NullableWarningSuppressionIsUsed")]
@@ -102,7 +139,7 @@ public sealed class ApplicationRoot : IApplicationRoot
             return;
         }
 
-        var remoteData = await RemoteDataManager.RequestData(environmentConfig, token);
+        var remoteData = await ConsulDataManager.Request(environmentConfig, token);
 
         if (remoteData.Count == 0)
         {
@@ -110,7 +147,7 @@ public sealed class ApplicationRoot : IApplicationRoot
         }
 
         var unixTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        await RemoteDataManager.SaveRemoteData(remoteData, _configuration.WorkingDirectory!, environmentConfig.Alias, unixTime, token);
+        await ConsulDataManager.Save(remoteData, _configuration.WorkingDirectory!, environmentConfig.Alias, unixTime, token);
     }
 
     private Task HandleCommand(AddRemoteEnvironmentCommand command, CancellationToken token)
@@ -131,16 +168,33 @@ public sealed class ApplicationRoot : IApplicationRoot
         return Task.CompletedTask;
     }
 
+    private async Task HandleCommand(BackupLocalEnvironmentCommand command, CancellationToken token)
+    {
+        // cmd: backup
+        var environmentConfig = _configuration.LocalEnvironment;
+        
+        var localData = await ConsulDataManager.Request(environmentConfig, token);
+        if (localData.Count == 0)
+        {
+            return;
+        }
+        
+        var unixTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+        // ReSharper disable once NullableWarningSuppressionIsUsed
+        await ConsulDataManager.Save(localData, _configuration.WorkingDirectory!, ConsulDataManager.BackupDirectory, unixTime, token);
+    }
+
     private Task PrintHelpInformation(CancellationToken token)
     {
         Console.WriteLine("Available commands:");
+        var commands = ApplicationCommandCode.GetHelpInformation();
 
-        Console.WriteLine(ApplicationCommandCode.HelpCode);
-        Console.WriteLine(ApplicationCommandCode.ListCode);
-        Console.WriteLine(ApplicationCommandCode.SwitchCode);
-        Console.WriteLine(ApplicationCommandCode.CloneCode);
-        Console.WriteLine(ApplicationCommandCode.AddCode);
-
+        foreach (var item in commands)
+        {
+            Console.WriteLine($"{item.Code}: {item.Description}");
+        }
+        
         return Task.CompletedTask;
     }
 }

@@ -5,9 +5,13 @@ using Refit;
 
 namespace EnvironmentManager.Services;
 
-public static class RemoteDataManager
+public static class ConsulDataManager
 {
-    public static async Task<IReadOnlyCollection<ConsulConfigFullDto>> RequestData(ConsulEnvironmentYamlConfiguration consulEnvironment, CancellationToken token)
+    public const string BackupDirectory = "backup";
+    public const string SnapshotFileName = "snapshot.json";
+    public const string ValuesDirectory = "values";
+    
+    public static async Task<IReadOnlyCollection<ConsulConfigFullDto>> Request(ConsulEnvironmentYamlConfiguration consulEnvironment, CancellationToken token)
     {
         var consulApi = RestService.For<IConsulApi>(consulEnvironment.Uri);
 
@@ -29,7 +33,7 @@ public static class RemoteDataManager
         return Array.Empty<ConsulConfigFullDto>();
     }
 
-    public static async Task SaveRemoteData(IReadOnlyCollection<ConsulConfigFullDto> data, string workingDirectory, string alias, long unixTime, CancellationToken token)
+    public static async Task Save(IReadOnlyCollection<ConsulConfigFullDto> data, string workingDirectory, string alias, long unixTime, CancellationToken token)
     {
         var remoteEnvLocalFolder = Path.Combine(workingDirectory, alias);
         
@@ -45,16 +49,67 @@ public static class RemoteDataManager
         await SaveValues(data, workingFolder, token);
     }
 
+    public static async Task Upload(ConsulEnvironmentYamlConfiguration consulEnvironment, string workingDirectory, string alias, string version, CancellationToken token)
+    {
+        var valuesFolderPath = Path.Combine(workingDirectory, alias, version, ValuesDirectory);
+
+        if (!Directory.Exists(valuesFolderPath))
+        {
+            return;
+        }
+        
+        var configFiles = Directory.GetFiles(valuesFolderPath, "*.json", SearchOption.AllDirectories );
+
+        if (configFiles.Length == 0)
+        {
+            return;
+        }
+        
+        var consulApi = RestService.For<IConsulApi>(consulEnvironment.Uri);
+
+        try
+        {
+            var tasks = configFiles.Select(v => UpdateConfiguration(consulEnvironment, consulApi, valuesFolderPath, v, token)).ToArray();
+            await Task.WhenAll(tasks);
+        } 
+        catch (Exception ex)
+        {
+            // TBD
+        }
+    }
+
+    private static async Task UpdateConfiguration(ConsulEnvironmentYamlConfiguration consulEnvironment, IConsulApi consulApi, string valuesFolderPath, string configFilePath, CancellationToken token)
+    {
+        var consulKey = ConsulKey(valuesFolderPath, configFilePath);
+        var consulValue = await File.ReadAllTextAsync(configFilePath, token);
+        
+        var updateValues = string.IsNullOrEmpty(consulEnvironment.Token)
+            ? consulApi.Update(consulKey, consulValue)
+            : consulApi.Update(consulEnvironment.Token, consulKey, consulValue);
+
+        await updateValues;
+
+        return;
+
+        string ConsulKey(string valuesFolderRoot, string dataPath)
+        {
+            var relativePath = Path.GetRelativePath(valuesFolderRoot, dataPath);
+            var extension = Path.GetExtension(dataPath);
+            
+            return relativePath.Replace('\\', '/').Replace(extension, string.Empty);
+        }
+    }
+
     private static async Task SaveSnapshot(IReadOnlyCollection<ConsulConfigFullDto> data, string workingFolder, CancellationToken token)
     {
-        var snapshotFilePath = Path.Combine(workingFolder, "snapshot.json");
+        var snapshotFilePath = Path.Combine(workingFolder, SnapshotFileName);
         await using var snapFileStream = File.Create(snapshotFilePath);
         await JsonSerializer.SerializeAsync(snapFileStream, data, cancellationToken: token);
     }
     
     private static async Task SaveValues(IReadOnlyCollection<ConsulConfigFullDto> data, string workingFolder, CancellationToken token)
     {
-        var valuesFolderPath = Path.Combine(workingFolder, "values");
+        var valuesFolderPath = Path.Combine(workingFolder, ValuesDirectory);
         Directory.CreateDirectory(valuesFolderPath);
 
         var allKeys = data.Select(v => v.Key).ToArray();
