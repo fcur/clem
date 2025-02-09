@@ -5,11 +5,13 @@
         <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <DebugType>embedded</DebugType>
+        <AssemblyName>clem</AssemblyName>
     </PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="Refit" Version="8.0.0"/>
-        <PackageReference Include="Refit.HttpClientFactory" Version="8.0.0" />
+        <PackageReference Include="Refit.HttpClientFactory" Version="8.0.0"/>
         <PackageReference Include="YamlDotNet" Version="16.3.0"/>
         <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="9.0.0"/>
         <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0"/>

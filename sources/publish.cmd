@@ -1,0 +1,1 @@
+dotnet publish -c Release -r win-x64 -p:EnableCompressionInSingleFile=true -p:SelfContained=true -p:PublishSingleFile=true

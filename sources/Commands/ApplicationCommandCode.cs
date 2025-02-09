@@ -21,12 +21,12 @@ public record struct ApplicationCommandCode(string Value)
     {
         return
         [
-            (HelpCode, ""),
-            (ListCode, ""),
-            (SwitchCode, ""),
-            (CloneCode, ""),
-            (AddCode, ""),
-            (BackupCode, "")
+            (HelpCode, "TBD"),
+            (ListCode, "TBD"),
+            (SwitchCode, "TBD"),
+            (CloneCode, "TBD"),
+            (AddCode, "TBD"),
+            (BackupCode, "TBD")
         ];
     }
 }
