@@ -1,7 +1,7 @@
 # Consul environment manager
 
 This is a handy tool for fast switching between multiple configured local [Consul](https://www.consul.io/) environments.
-A special configuration file `clem.yaml` will be created in user directory `%HOMEDRIVE%%HOMEPATH%`on the first run (check [example.yaml](/example.yaml) for example). In addition, tool will ask for a working folder if it was not specified in the configuration file. 
+A special configuration file `clem.yaml` will be created in user directory `%HOMEDRIVE%%HOMEPATH%`on the first run (check [example.yaml](/sources/example.yaml) for example). In addition, tool will ask for a working folder if it was not specified in the configuration file. 
 
 
 Available commands:
