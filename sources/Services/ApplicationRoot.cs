@@ -187,12 +187,15 @@ public sealed class ApplicationRoot : IApplicationRoot
 
     private Task PrintHelpInformation(CancellationToken token)
     {
-        Console.WriteLine("Available commands:");
         var commands = ApplicationCommandCode.GetHelpInformation();
+        var maxCmdCodeLength = commands.Max(v => v.Code.Length) + 2;
 
+        Console.WriteLine("Available commands:");
         foreach (var item in commands)
         {
-            Console.WriteLine($"{item.Code}: {item.Description}");
+            var spacesCount = maxCmdCodeLength - item.Code.Length;
+            var blankString = new string(' ', spacesCount);
+            Console.WriteLine($"{item.Code}{blankString}: {item.Description}");
         }
         
         return Task.CompletedTask;

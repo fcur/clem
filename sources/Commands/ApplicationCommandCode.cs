@@ -21,12 +21,14 @@ public record struct ApplicationCommandCode(string Value)
     {
         return
         [
-            (HelpCode, "TBD"),
-            (ListCode, "TBD"),
-            (SwitchCode, "TBD"),
-            (CloneCode, "TBD"),
-            (AddCode, "TBD"),
-            (BackupCode, "TBD")
+            (ListCode, "Print available environment list."),
+            ($"{ListCode} [alias]", "Print specific environment versions."),
+            (SwitchCode, "Switch to the latest environment version."),
+            ($"{SwitchCode} [alias]", "Switch to a specific environment version."),
+            ($"{CloneCode} [alias]", "Clone the defined remote environment."),
+            ($"{AddCode} [alias] [endpoint]", "Save remote environment without authorization in configuration."),
+            ($"{AddCode} [alias] [endpoint] [token]", "Save remote environment with authorization via token in configuration."),
+            (BackupCode, "Backup local environment."),
         ];
     }
 }
