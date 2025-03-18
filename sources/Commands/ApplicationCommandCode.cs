@@ -8,6 +8,7 @@ public record struct ApplicationCommandCode(string Value)
     public const string CloneCode = "clone";
     public const string AddCode = "add";
     public const string BackupCode = "backup";
+    public const string DropCode = "drop";
 
     public static readonly ApplicationCommandCode Unknown = new ApplicationCommandCode(string.Empty);
     public static readonly ApplicationCommandCode Help = new ApplicationCommandCode(HelpCode);
@@ -16,6 +17,7 @@ public record struct ApplicationCommandCode(string Value)
     public static readonly ApplicationCommandCode CloneRemote = new ApplicationCommandCode(CloneCode);
     public static readonly ApplicationCommandCode AddRemote = new ApplicationCommandCode(AddCode);
     public static readonly ApplicationCommandCode Backup = new ApplicationCommandCode(BackupCode);
+    public static readonly ApplicationCommandCode Drop = new ApplicationCommandCode(DropCode);
 
     public static IReadOnlyCollection<(string Code, string Description)> GetHelpInformation()
     {
@@ -28,7 +30,8 @@ public record struct ApplicationCommandCode(string Value)
             ($"{CloneCode} [alias]", "Clone the defined remote environment."),
             ($"{AddCode} [alias] [endpoint]", "Save remote environment without authorization in configuration."),
             ($"{AddCode} [alias] [endpoint] [token]", "Save remote environment with authorization via token in configuration."),
-            (BackupCode, "Backup local environment."),
+            (BackupCode, "Backup local environment configuration."),
+            (DropCode, "Drop local environment configuration."),
         ];
     }
 }

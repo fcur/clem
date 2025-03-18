@@ -1,13 +1,12 @@
-using System.Runtime.InteropServices.JavaScript;
 using EnvironmentManager.Extensions;
-using EnvironmentManager.Services;
 
 namespace EnvironmentManager.Configuration;
 
 public static class AppConfigurationManager
 {
     private const string ConfigFileName = "clem.yaml";
-
+    private const string BackupDirectory = "backup";
+    
     public static ClemYamlConfiguration LoadOrCreateDefault(
         Func<string, ClemYamlConfiguration> deserializer,
         Func<ClemYamlConfiguration, string> serializer)
@@ -52,7 +51,7 @@ public static class AppConfigurationManager
     {
         var directoriesInfo = Directory.GetDirectories(workingDirectory)
             .Select(v => (new DirectoryInfo(v).Name, Directory.GetDirectories(v).Length))
-            .Where(v => !v.Name.Contains(ConsulDataManager.BackupDirectory))
+            .Where(v => !v.Name.Contains(BackupDirectory))
             .ToArray();
 
         return directoriesInfo;

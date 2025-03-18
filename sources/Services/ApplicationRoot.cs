@@ -42,6 +42,7 @@ public sealed class ApplicationRoot : IApplicationRoot
             CloneRemoteEnvironmentCommand cloneCommand => HandleCommand(cloneCommand, token),
             AddRemoteEnvironmentCommand addCommand => HandleCommand(addCommand, token),
             BackupLocalEnvironmentCommand backupLocalCommand=> HandleCommand(backupLocalCommand, token),
+            DropLocalEnvironmentCommand dropLocalCommand=> HandleCommand(dropLocalCommand, token),
             _ => Task.CompletedTask
         };
     }
@@ -182,9 +183,29 @@ public sealed class ApplicationRoot : IApplicationRoot
         var unixTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
         // ReSharper disable once NullableWarningSuppressionIsUsed
-        await ConsulDataManager.Save(localData, _configuration.WorkingDirectory!, ConsulDataManager.BackupDirectory, unixTime, token);
+        await ConsulDataManager.SaveBackup(localData, _configuration.WorkingDirectory!, unixTime, token);
     }
 
+    private async Task HandleCommand(DropLocalEnvironmentCommand command, CancellationToken token)
+    {
+        // cmd: drop
+        var environmentConfig = _configuration.LocalEnvironment;
+        
+        var localData = await ConsulDataManager.Request(environmentConfig, token);
+        if (localData.Count == 0)
+        {
+            return;
+        }
+        
+        var unixTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        
+        // ReSharper disable once NullableWarningSuppressionIsUsed
+        await ConsulDataManager.SaveBackup(localData, _configuration.WorkingDirectory!, unixTime, token);
+
+        var keysToDelete = localData.Select(v => v.Key).ToArray();
+        _ = await ConsulDataManager.Drop(environmentConfig, keysToDelete, token);
+    }
+    
     private Task PrintHelpInformation(CancellationToken token)
     {
         var commands = ApplicationCommandCode.GetHelpInformation();

@@ -19,6 +19,7 @@ public abstract record BaseApplicationCommand(ApplicationCommandCode Code, strin
         {
             ApplicationCommandCode.HelpCode => new HelpEnvironmentCommand(commandArgs),
             ApplicationCommandCode.BackupCode => new BackupLocalEnvironmentCommand(commandArgs),
+            ApplicationCommandCode.DropCode => new DropLocalEnvironmentCommand(commandArgs),
             ApplicationCommandCode.ListCode when commandArgs is null => new ListEnvironmentCommand(commandArgs),
             ApplicationCommandCode.ListCode when commandArgs is { Length: 1 } => new ListEnvironmentVersionsCommand(commandArgs),
             ApplicationCommandCode.SwitchCode when commandArgs is { Length: 1 } => new SwitchLatestEnvironmentCommand(commandArgs),

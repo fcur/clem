@@ -7,9 +7,10 @@ namespace EnvironmentManager.Services;
 
 public static class ConsulDataManager
 {
-    public const string BackupDirectory = "backup";
-    public const string SnapshotFileName = "snapshot.json";
-    public const string ValuesDirectory = "values";
+    private const string BackupDirectory = "backup";
+    private const string SnapshotFileName = "snapshot.json";
+    private const string ValuesDirectory = "values";
+    private const string ValueFileExtension = ".txt";
     
     public static async Task<IReadOnlyCollection<ConsulConfigFullDto>> Request(ConsulEnvironmentYamlConfiguration consulEnvironment, CancellationToken token)
     {
@@ -17,11 +18,7 @@ public static class ConsulDataManager
 
         try
         {
-            var getAllValues = string.IsNullOrEmpty(consulEnvironment.Token)
-                ? consulApi.GetAllValues()
-                : consulApi.GetAllValues(token: consulEnvironment.Token);
-        
-            var result = await getAllValues;
+            var result = await consulApi.GetAllValues(token: consulEnvironment.Token ?? string.Empty);
 
             return result;
         }
@@ -33,6 +30,9 @@ public static class ConsulDataManager
         return Array.Empty<ConsulConfigFullDto>();
     }
 
+    public static Task SaveBackup(IReadOnlyCollection<ConsulConfigFullDto> data, string workingDirectory, long unixTime, CancellationToken token) =>
+        Save(data, workingDirectory, BackupDirectory, unixTime, token);
+    
     public static async Task Save(IReadOnlyCollection<ConsulConfigFullDto> data, string workingDirectory, string alias, long unixTime, CancellationToken token)
     {
         var remoteEnvLocalFolder = Path.Combine(workingDirectory, alias);
@@ -58,7 +58,7 @@ public static class ConsulDataManager
             return;
         }
         
-        var configFiles = Directory.GetFiles(valuesFolderPath, "*.json", SearchOption.AllDirectories );
+        var configFiles = Directory.GetFiles(valuesFolderPath, "*", SearchOption.AllDirectories );
 
         if (configFiles.Length == 0)
         {
@@ -78,16 +78,32 @@ public static class ConsulDataManager
         }
     }
 
+    public static async Task<bool> Drop(ConsulEnvironmentYamlConfiguration consulEnvironment, IReadOnlyCollection<string> keys, CancellationToken token)
+    {
+        var consulApi = RestService.For<IConsulApi>(consulEnvironment.Uri);
+
+        try
+        {
+            var tasks = keys.Select(v => consulApi.Clear(consulEnvironment.Token ?? string.Empty, v)).ToArray();
+            var dropResults = await Task.WhenAll(tasks);
+            var isSuccess = dropResults.All(v=> v);
+
+            return isSuccess;
+        }
+        catch (Exception ex)
+        {
+            // TBD
+        }
+        
+        return false;
+    }
+    
     private static async Task UpdateConfiguration(ConsulEnvironmentYamlConfiguration consulEnvironment, IConsulApi consulApi, string valuesFolderPath, string configFilePath, CancellationToken token)
     {
         var consulKey = ConsulKey(valuesFolderPath, configFilePath);
         var consulValue = await File.ReadAllTextAsync(configFilePath, token);
-        
-        var updateValues = string.IsNullOrEmpty(consulEnvironment.Token)
-            ? consulApi.Update(consulKey, consulValue)
-            : consulApi.Update(consulEnvironment.Token, consulKey, consulValue);
 
-        await updateValues;
+        await consulApi.Update(consulEnvironment.Token ?? string.Empty, consulKey, consulValue);
 
         return;
 
@@ -127,7 +143,7 @@ public static class ConsulDataManager
 
         string ValueDataPath(string contentFolderPath, string key)
         {
-            return Path.Combine(contentFolderPath, $"{key}.json");
+            return Path.Combine(contentFolderPath, $"{key}{ValueFileExtension}");
         }
     }
     
