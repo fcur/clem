@@ -27,7 +27,7 @@ public static class ConsulDataManager
             // TBD
         }
 
-        return Array.Empty<ConsulConfigFullDto>();
+        return [];
     }
 
     public static Task SaveBackup(IReadOnlyCollection<ConsulConfigFullDto> data, string workingDirectory, long unixTime, CancellationToken token) =>
@@ -133,6 +133,11 @@ public static class ConsulDataManager
 
         foreach (var item in data)
         {
+            if (string.IsNullOrEmpty(item.Value))
+            {
+                continue;
+            }
+            
             var contentFilePath = ValueDataPath(valuesFolderPath, item.Key);
             var contentBytes = Convert.FromBase64String(item.Value);
             await using var valFileStream = File.Create(contentFilePath);
@@ -157,7 +162,7 @@ public static class ConsulDataManager
 
         string KeysSelector(string key)
         {
-            var parts = key.Split('/').ToArray();
+            var parts = key.Split('/');
             if (parts.Length == 1)
             {
                 return workingFolder;
