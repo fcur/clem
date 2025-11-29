@@ -17,3 +17,23 @@ Available commands:
 | add `alias` `endpoint` `token` | Save remote environment with authorization via token in configuration. |
 | backup                         | Backup local environment configuration.                                |
 | drop                           | Drop local environment configuration.                                  |
+
+
+The simplest way to backup your local consul environment is to run the following command:
+```
+clem backup
+```
+This command will save your configuration in a reserved folder named `backup` in your working directory. 
+
+
+Let's imagine that you need to restore the configuration from a specific version. For this result, you need to run the following command:
+```
+clem switch UAT31 1764422923
+```
+In this case `UAT31` is an alias for you known environment and `1764422923` is his version. You can also easily restore the previous version for your local enviroment with the following command:
+```
+clem switch backup
+```
+In this case, you can leave the version as blank and the latest one will be automatically selected. The latest version of the backup is being created immediately before applying the new configuration to your local environment, so you don't have to worry about losing any information.
+
+
