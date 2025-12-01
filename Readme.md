@@ -19,7 +19,7 @@ Available commands:
 | drop                           | Drop local environment configuration.                                  |
 
 
-The simplest way to backup your local consul environment is to run the following command:
+The simplest way to back up your local consul environment is to run the following command:
 ```
 clem backup
 ```
@@ -30,10 +30,10 @@ Let's imagine that you need to restore the configuration from a specific version
 ```
 clem switch UAT31 1764422923
 ```
-In this case `UAT31` is an alias for you known environment and `1764422923` is his version. You can also easily restore the previous version for your local enviroment with the following command:
+In this case, `UAT31` is an alias for you known environment, and `1764422923` is his version. You can also easily restore the previous version for your local environment with the following command:
 ```
 clem switch backup
 ```
-In this case, you can leave the version as blank and the latest one will be automatically selected. The latest version of the backup is being created immediately before applying the new configuration to your local environment, so you don't have to worry about losing any information.
+If you leave the version field blank, then the latest one will be automatically selected. The latest version of the backup is being created immediately before applying the new configuration to your local environment, so you don't have to worry about losing any information.
 
 
