@@ -24,3 +24,10 @@ public sealed class ConsulConfigFullDto
     [JsonPropertyName("ModifyIndex")]
     public int ModifyIndex { get; set; }
 }
+
+[JsonSerializable(typeof(ConsulConfigFullDto))]
+[JsonSerializable(typeof(IReadOnlyCollection<ConsulConfigFullDto>))]
+[JsonSourceGenerationOptions(WriteIndented = true)]
+public partial class ConsulConfigJsonContext : JsonSerializerContext
+{
+}

@@ -91,9 +91,10 @@ public static class App
 
     private static ISerializer CreateSerializer()
     {
-        var serializerBuilder = new SerializerBuilder()
+        var serializerBuilder = new StaticSerializerBuilder(new ClemConfigurationStaticContext())
             .ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitNull)
-            .WithNamingConvention(HyphenatedNamingConvention.Instance);
+            .WithNamingConvention(HyphenatedNamingConvention.Instance)
+            .EnsureRoundtrip();
         var serializer = serializerBuilder.Build();
 
         return serializer;
@@ -101,7 +102,7 @@ public static class App
 
     private static IDeserializer CreateDeserializer()
     {
-        var deserializerBuilder = new DeserializerBuilder()
+        var deserializerBuilder = new StaticDeserializerBuilder(new ClemConfigurationStaticContext())
             .WithNamingConvention(HyphenatedNamingConvention.Instance);
         var deserializer = deserializerBuilder.Build();
 

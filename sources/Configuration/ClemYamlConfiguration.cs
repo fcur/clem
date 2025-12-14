@@ -1,4 +1,5 @@
 using EnvironmentManager.Configuration;
+using YamlDotNet.Serialization;
 
 namespace EnvironmentManager.Extensions;
 
@@ -8,4 +9,11 @@ public sealed class ClemYamlConfiguration
     public ushort SelectedEnvironmentIndex { get; set; } = 0;
     public ConsulEnvironmentYamlConfiguration[] KnownEnvironments { get; set; } = [];
     public string? WorkingDirectory { get; set; }
+}
+
+[YamlStaticContext]
+[YamlSerializable(typeof(ConsulEnvironmentYamlConfiguration))] 
+[YamlSerializable(typeof(ClemYamlConfiguration))] 
+public partial class ClemConfigurationStaticContext: YamlDotNet.Serialization.StaticContext
+{
 }
