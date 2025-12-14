@@ -14,7 +14,7 @@ public static class ConsulDataManager
     
     public static async Task<IReadOnlyCollection<ConsulConfigFullDto>> Request(ConsulEnvironmentYamlConfiguration consulEnvironment, CancellationToken token)
     {
-        var consulApi = RestService.For<IConsulApi>(consulEnvironment.Uri);
+        var consulApi = GetConsulApi(consulEnvironment.Uri);
 
         try
         {
@@ -65,7 +65,7 @@ public static class ConsulDataManager
             return;
         }
         
-        var consulApi = RestService.For<IConsulApi>(consulEnvironment.Uri);
+        var consulApi = GetConsulApi(consulEnvironment.Uri);
 
         try
         {
@@ -80,7 +80,7 @@ public static class ConsulDataManager
 
     public static async Task<bool> Drop(ConsulEnvironmentYamlConfiguration consulEnvironment, IReadOnlyCollection<string> keys, CancellationToken token)
     {
-        var consulApi = RestService.For<IConsulApi>(consulEnvironment.Uri);
+        var consulApi = GetConsulApi(consulEnvironment.Uri);
 
         try
         {
@@ -120,7 +120,8 @@ public static class ConsulDataManager
     {
         var snapshotFilePath = Path.Combine(workingFolder, SnapshotFileName);
         await using var snapFileStream = File.Create(snapshotFilePath);
-        await JsonSerializer.SerializeAsync(snapFileStream, data, cancellationToken: token);
+        await JsonSerializer.SerializeAsync(snapFileStream, data, 
+            ConsulConfigJsonContext.Default.IReadOnlyCollectionConsulConfigFullDto, cancellationToken: token);
     }
     
     private static async Task SaveValues(IReadOnlyCollection<ConsulConfigFullDto> data, string workingFolder, CancellationToken token)
@@ -171,5 +172,22 @@ public static class ConsulDataManager
             var wantedParts = parts.Prepend(workingFolder).SkipLast(1).ToArray();
             return Path.Combine(wantedParts);
         }
+    }
+
+    private static IConsulApi GetConsulApi(string consulUri)
+    {
+        var options = new JsonSerializerOptions
+        {
+            TypeInfoResolver = ConsulConfigJsonContext.Default
+        };
+
+        var refitSettings = new RefitSettings
+        {
+            ContentSerializer = new SystemTextJsonContentSerializer(options)
+        };
+        
+        var consulApi = RestService.For<IConsulApi>(consulUri, refitSettings);
+
+        return consulApi;
     }
 }
